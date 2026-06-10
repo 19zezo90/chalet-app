@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#1D9E75">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="شالية">
+<title>إدارة الشالية</title>
+<link rel="manifest" href="manifest.json">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:#f0f4f8;direction:rtl;min-height:100vh}
+:root{--green:#1D9E75;--green-dark:#0F6E56;--green-light:#E1F5EE;--red:#e53935;--amber:#F57F17;--gray:#f5f5f5;--border:#e0e0e0;--text:#212121;--text2:#757575}
+
+/* HEADER */
+.header{background:var(--green);padding:16px;color:white;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.header h1{font-size:18px;font-weight:600}
+.sync-btn{background:rgba(255,255,255,0.2);border:none;color:white;padding:6px 12px;border-radius:20px;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:5px}
+.sync-btn.syncing{animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* STATS */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:14px}
+.stat{background:white;border-radius:12px;padding:12px;text-align:center;border:1px solid var(--border)}
+.stat .n{font-size:24px;font-weight:700;color:var(--green)}
+.stat .l{font-size:11px;color:var(--text2);margin-top:2px}
+
+/* TABS */
+.tabs{display:flex;background:white;border-bottom:1px solid var(--border);position:sticky;top:60px;z-index:99}
+.tab{flex:1;padding:12px 4px;text-align:center;font-size:13px;cursor:pointer;color:var(--text2);border-bottom:3px solid transparent;transition:all .2s}
+.tab.active{color:var(--green);border-bottom-color:var(--green);font-weight:600}
+
+/* FORMS */
+.section{padding:14px}
+.form-group{margin-bottom:14px}
+.form-group label{display:block;font-size:13px;color:var(--text2);margin-bottom:6px;font-weight:500}
+.form-group input,.form-group select{width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:15px;background:white;color:var(--text);transition:border .2s;font-family:inherit}
+.form-group input:focus,.form-group select:focus{outline:none;border-color:var(--green)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.type-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.type-btn{padding:10px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;cursor:pointer;text-align:center;background:white;color:var(--text2);transition:all .2s;font-family:inherit}
+.type-btn.sel{background:var(--green-light);color:var(--green-dark);border-color:var(--green);font-weight:600}
+.btn-main{width:100%;padding:14px;background:var(--green);color:white;border:none;border-radius:12px;font-size:16px;cursor:pointer;font-weight:600;font-family:inherit;margin-top:4px;transition:opacity .2s}
+.btn-main:active{opacity:.85}
+.btn-main:disabled{opacity:.6;cursor:not-allowed}
+
+/* CARDS */
+.res-card{background:white;border-radius:12px;padding:14px;margin-bottom:10px;border:1px solid var(--border)}
+.card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
+.card-name{font-size:16px;font-weight:600;color:var(--text)}
+.badges{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}
+.badge{font-size:11px;padding:3px 8px;border-radius:20px;font-weight:500}
+.b-daily{background:#E3F2FD;color:#1565C0}
+.b-weekend{background:#FFF8E1;color:#E65100}
+.b-confirmed{background:var(--green-light);color:var(--green-dark)}
+.b-pending{background:#FFF3E0;color:#BF360C}
+.card-row{font-size:13px;color:var(--text2);margin-bottom:5px;display:flex;align-items:center;gap:6px}
+.card-actions{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:12px}
+.ca-btn{padding:8px;border-radius:8px;font-size:12px;cursor:pointer;text-align:center;border:1px solid;font-family:inherit;font-weight:500}
+.ca-green{background:var(--green-light);color:var(--green-dark);border-color:#5DCAA5}
+.ca-blue{background:#E3F2FD;color:#1565C0;border-color:#90CAF9}
+.ca-red{background:#FFEBEE;color:#C62828;border-color:#EF9A9A}
+
+/* SEARCH */
+.search-wrap{padding:12px 14px 0}
+.search-wrap input{width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;background:white;font-family:inherit}
+.search-wrap input:focus{outline:none;border-color:var(--green)}
+
+/* BACKUP TAB */
+.backup-card{background:white;border-radius:12px;padding:16px;margin-bottom:12px;border:1px solid var(--border)}
+.backup-card h3{font-size:15px;font-weight:600;margin-bottom:10px;color:var(--text)}
+.status-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)}
+.status-row:last-child{border-bottom:none}
+.status-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.dot-green{background:var(--green)}
+.dot-gray{background:#bdbdbd}
+.status-text{font-size:13px;color:var(--text2);flex:1}
+.status-val{font-size:13px;font-weight:500;color:var(--text)}
+.btn-secondary{width:100%;padding:11px;background:var(--gray);color:var(--text);border:1.5px solid var(--border);border-radius:10px;font-size:14px;cursor:pointer;font-family:inherit;font-weight:500;margin-bottom:8px}
+.btn-secondary:active{opacity:.8}
+
+/* TOAST */
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#323232;color:white;padding:10px 20px;border-radius:24px;font-size:14px;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1}
+
+/* EMPTY */
+.empty{text-align:center;padding:40px 20px;color:var(--text2)}
+.empty-icon{font-size:48px;margin-bottom:10px}
+.empty p{font-size:14px}
+
+/* MODAL */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:center;justify-content:center;padding:20px}
+.overlay.show{display:flex}
+.modal{background:white;border-radius:16px;padding:24px;width:100%;max-width:340px;text-align:center}
+.modal-icon{font-size:52px;margin-bottom:12px}
+.modal h3{font-size:18px;font-weight:600;margin-bottom:8px}
+.modal p{font-size:14px;color:var(--text2);margin-bottom:20px;line-height:1.6}
+.modal-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.modal-btns button{padding:11px;border-radius:10px;font-size:14px;cursor:pointer;font-family:inherit;font-weight:500}
+.modal-btns .mb-green{background:var(--green);color:white;border:none}
+.modal-btns .mb-gray{background:var(--gray);color:var(--text);border:1px solid var(--border)}
+
+.tab-content{display:none}
+.tab-content.active{display:block}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <button class="sync-btn" onclick="syncToSheets()" id="syncBtn">
+    ☁️ مزامنة
+  </button>
+  <h1>🏡 شالية</h1>
+</div>
+
+<div class="stats">
+  <div class="stat"><div class="n" id="s-total">0</div><div class="l">إجمالي</div></div>
+  <div class="stat"><div class="n" id="s-confirmed">0</div><div class="l">مؤكدة</div></div>
+  <div class="stat"><div class="n" id="s-pending">0</div><div class="l">معلقة</div></div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="showTab('new',this)">➕ حجز جديد</div>
+  <div class="tab" onclick="showTab('list',this)">📋 الحجوزات</div>
+  <div class="tab" onclick="showTab('backup',this)">☁️ النسخ</div>
+</div>
+
+<!-- NEW BOOKING TAB -->
+<div id="tab-new" class="tab-content active">
+<div class="section">
+  <div class="type-grid">
+    <button class="type-btn sel" id="t-daily" onclick="setType('daily')">🌅 يومي</button>
+    <button class="type-btn" id="t-weekend" onclick="setType('weekend')">🎉 نهاية أسبوع</button>
+  </div>
+  <div class="form-group">
+    <label>👤 اسم العميل</label>
+    <input type="text" id="f-name" placeholder="الاسم الكامل">
+  </div>
+  <div class="form-group">
+    <label>📱 رقم الجوال</label>
+    <input type="tel" id="f-phone" placeholder="05xxxxxxxx">
+  </div>
+  <div class="form-group">
+    <label>🪪 رقم الهوية</label>
+    <input type="text" id="f-id" placeholder="1xxxxxxxxx">
+  </div>
+  <div class="form-row">
+    <div class="form-group">
+      <label>📅 تاريخ الوصول</label>
+      <input type="date" id="f-checkin">
+    </div>
+    <div class="form-group">
+      <label>📅 تاريخ المغادرة</label>
+      <input type="date" id="f-checkout">
+    </div>
+  </div>
+  <div class="form-group">
+    <label>💰 السعر (ريال)</label>
+    <input type="number" id="f-price" placeholder="0">
+  </div>
+  <div class="form-group">
+    <label>📝 ملاحظات</label>
+    <input type="text" id="f-notes" placeholder="أي ملاحظات إضافية...">
+  </div>
+  <button class="btn-main" onclick="addBooking()" id="addBtn">✅ تأكيد الحجز</button>
+</div>
+</div>
+
+<!-- LIST TAB -->
+<div id="tab-list" class="tab-content">
+  <div class="search-wrap">
+    <input type="text" id="search" placeholder="🔍 ابحث باسم العميل..." oninput="renderList()">
+  </div>
+  <div class="section" id="list-container"></div>
+</div>
+
+<!-- BACKUP TAB -->
+<div id="tab-backup" class="tab-content">
+<div class="section">
+  <div class="backup-card">
+    <h3>☁️ حالة Google Sheets</h3>
+    <div class="status-row">
+      <div class="status-dot dot-green"></div>
+      <div class="status-text">Sheet ID</div>
+      <div class="status-val" style="font-size:11px;direction:ltr">...COrat8</div>
+    </div>
+    <div class="status-row">
+      <div class="status-dot dot-green"></div>
+      <div class="status-text">API Key</div>
+      <div class="status-val">✅ مفعّل</div>
+    </div>
+    <div class="status-row">
+      <div class="status-dot" id="sync-dot" style="background:#bdbdbd"></div>
+      <div class="status-text">آخر مزامنة</div>
+      <div class="status-val" id="last-sync">لم تتم بعد</div>
+    </div>
+  </div>
+
+  <button class="btn-main" onclick="syncToSheets()" style="margin-bottom:10px">☁️ مزامنة الآن مع Google Sheets</button>
+  <button class="btn-secondary" onclick="exportCSV()">📥 تحميل نسخة CSV</button>
+  <button class="btn-secondary" onclick="clearAll()">🗑️ مسح جميع البيانات المحلية</button>
+
+  <div class="backup-card" style="margin-top:12px">
+    <h3>📊 إحصائيات</h3>
+    <div class="status-row">
+      <div class="status-text">إجمالي الحجوزات</div>
+      <div class="status-val" id="b-total">0</div>
+    </div>
+    <div class="status-row">
+      <div class="status-text">إجمالي الإيرادات</div>
+      <div class="status-val" id="b-revenue">0 ريال</div>
+    </div>
+    <div class="status-row">
+      <div class="status-text">حجوزات مؤكدة</div>
+      <div class="status-val" id="b-confirmed">0</div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- SUCCESS MODAL -->
+<div class="overlay" id="modal">
+  <div class="modal">
+    <div class="modal-icon">🎉</div>
+    <h3>تم تأكيد الحجز!</h3>
+    <p id="modal-msg">تم حفظ الحجز بنجاح</p>
+    <div class="modal-btns">
+      <button class="mb-gray" onclick="closeModal()">إغلاق</button>
+      <button class="mb-green" onclick="sendWhatsApp()">📲 واتساب</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API_KEY = 'AIzaSyC9V5rtVVgr0B1UPG-wHGD8E7op3nhQAQY';
+const SHEET_ID = '1Gn74OrgRdJsqPXRD3rfeTbRhL5dkL_NRhSkC7COrat8';
+const BASE_URL = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values`;
+
+let bookings = JSON.parse(localStorage.getItem('chalet_bookings') || '[]');
+let selType = 'daily';
+let lastBooking = null;
+
+const today = new Date().toISOString().split('T')[0];
+document.getElementById('f-checkin').value = today;
+document.getElementById('f-checkin').min = today;
+document.getElementById('f-checkout').min = today;
+document.getElementById('f-checkin').addEventListener('change', e => {
+  document.getElementById('f-checkout').min = e.target.value;
+});
+
+function save() { localStorage.setItem('chalet_bookings', JSON.stringify(bookings)); updateStats(); }
+
+function showTab(tab, el) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  el.classList.add('active');
+  if (tab === 'list') renderList();
+  if (tab === 'backup') updateBackupStats();
+}
+
+function setType(t) {
+  selType = t;
+  document.getElementById('t-daily').classList.toggle('sel', t === 'daily');
+  document.getElementById('t-weekend').classList.toggle('sel', t === 'weekend');
+}
+
+function addBooking() {
+  const name = document.getElementById('f-name').value.trim();
+  const phone = document.getElementById('f-phone').value.trim();
+  const idNum = document.getElementById('f-id').value.trim();
+  const checkin = document.getElementById('f-checkin').value;
+  const checkout = document.getElementById('f-checkout').value;
+  const price = document.getElementById('f-price').value;
+  const notes = document.getElementById('f-notes').value.trim();
+  if (!name || !phone || !checkin || !checkout || !price) { showToast('⚠️ يرجى تعبئة جميع الحقول'); return; }
+  const b = { id: Date.now(), name, phone, idNum, checkin, checkout, price: Number(price), notes, type: selType, status: 'pending', created: new Date().toLocaleDateString('ar-SA') };
+  bookings.unshift(b);
+  lastBooking = b;
+  save();
+  document.getElementById('modal-msg').textContent = `${name} — ${checkin} إلى ${checkout} — ${Number(price).toLocaleString()} ريال`;
+  document.getElementById('modal').classList.add('show');
+  clearForm();
+}
+
+function clearForm() {
+  ['f-name','f-phone','f-id','f-price','f-notes'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('f-checkin').value = today;
+  document.getElementById('f-checkout').value = '';
+}
+
+function closeModal() { document.getElementById('modal').classList.remove('show'); }
+
+function sendWhatsApp() {
+  if (!lastBooking) return;
+  const b = lastBooking;
+  const msg = `*تأكيد حجز شالية* 🏡\n\nالاسم: ${b.name}\nالجوال: ${b.phone}\nتاريخ الوصول: ${b.checkin}\nتاريخ المغادرة: ${b.checkout}\nالسعر: ${b.price.toLocaleString()} ريال\nنوع الحجز: ${b.type==='daily'?'يومي':'نهاية أسبوع'}\n${b.notes?'ملاحظات: '+b.notes:''}\n\nشكراً لاختياركم شاليتنا 🌟`;
+  window.open('https://wa.me/966' + b.phone.replace(/^0/,'') + '?text=' + encodeURIComponent(msg));
+  closeModal();
+}
+
+function renderList() {
+  const q = (document.getElementById('search')?.value || '').toLowerCase();
+  const filtered = bookings.filter(b => b.name.toLowerCase().includes(q));
+  const el = document.getElementById('list-container');
+  if (!filtered.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">📭</div><p>لا توجد حجوزات بعد</p></div>';
+    return;
+  }
+  el.innerHTML = filtered.map(b => `
+    <div class="res-card">
+      <div class="card-top">
+        <div class="card-name">${b.name}</div>
+        <div class="badges">
+          <span class="badge ${b.type==='daily'?'b-daily':'b-weekend'}">${b.type==='daily'?'🌅 يومي':'🎉 أسبوع'}</span>
+          <span class="badge ${b.status==='confirmed'?'b-confirmed':'b-pending'}">${b.status==='confirmed'?'✅ مؤكد':'⏳ معلق'}</span>
+        </div>
+      </div>
+      <div class="card-row">📱 ${b.phone}</div>
+      ${b.idNum?`<div class="card-row">🪪 ${b.idNum}</div>`:''}
+      <div class="card-row">📅 ${b.checkin} ← ${b.checkout}</div>
+      <div class="card-row">💰 ${b.price.toLocaleString()} ريال</div>
+      ${b.notes?`<div class="card-row">📝 ${b.notes}</div>`:''}
+      <div class="card-actions">
+        <button class="ca-btn ca-green" onclick="confirm_b(${b.id})">✅ تأكيد</button>
+        <button class="ca-btn ca-blue" onclick="wa_b(${b.id})">📲 واتساب</button>
+        <button class="ca-btn ca-red" onclick="delete_b(${b.id})">🗑️ حذف</button>
+      </div>
+    </div>`).join('');
+}
+
+function confirm_b(id) {
+  const b = bookings.find(x => x.id===id);
+  if (b) { b.status='confirmed'; save(); renderList(); showToast('✅ تم تأكيد الحجز'); }
+}
+
+function wa_b(id) {
+  const b = bookings.find(x => x.id===id);
+  if (!b) return;
+  const msg = `*تأكيد حجز شالية* 🏡\n\nالاسم: ${b.name}\nالجوال: ${b.phone}\nتاريخ الوصول: ${b.checkin}\nتاريخ المغادرة: ${b.checkout}\nالسعر: ${b.price.toLocaleString()} ريال\n\nشكراً لاختياركم شاليتنا 🌟`;
+  window.open('https://wa.me/966' + b.phone.replace(/^0/,'') + '?text=' + encodeURIComponent(msg));
+}
+
+function delete_b(id) {
+  if (!confirm('هل تريد حذف هذا الحجز؟')) return;
+  bookings = bookings.filter(x => x.id!==id);
+  save(); renderList(); showToast('🗑️ تم الحذف');
+}
+
+function updateStats() {
+  document.getElementById('s-total').textContent = bookings.length;
+  document.getElementById('s-confirmed').textContent = bookings.filter(b=>b.status==='confirmed').length;
+  document.getElementById('s-pending').textContent = bookings.filter(b=>b.status==='pending').length;
+}
+
+function updateBackupStats() {
+  document.getElementById('b-total').textContent = bookings.length;
+  document.getElementById('b-revenue').textContent = bookings.reduce((s,b)=>s+b.price,0).toLocaleString() + ' ريال';
+  document.getElementById('b-confirmed').textContent = bookings.filter(b=>b.status==='confirmed').length;
+}
+
+async function syncToSheets() {
+  if (!bookings.length) { showToast('⚠️ لا توجد حجوزات للمزامنة'); return; }
+  const btn = document.getElementById('syncBtn');
+  btn.textContent = '⏳ جارٍ...';
+  btn.disabled = true;
+  showToast('☁️ جارٍ المزامنة...');
+  try {
+    const header = [['الرقم','الاسم','الجوال','رقم الهوية','تاريخ الوصول','تاريخ المغادرة','السعر','النوع','الحالة','الملاحظات','تاريخ الإنشاء']];
+    const rows = bookings.map((b,i) => [i+1, b.name, b.phone, b.idNum||'', b.checkin, b.checkout, b.price, b.type==='daily'?'يومي':'نهاية أسبوع', b.status==='confirmed'?'مؤكد':'معلق', b.notes||'', b.created||'']);
+    const values = [...header, ...rows];
+    const res = await fetch(`${BASE_URL}/A1?valueInputOption=RAW&key=${API_KEY}`, {
+      method: 'PUT',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ values })
+    });
+    if (res.ok) {
+      const now = new Date().toLocaleTimeString('ar-SA');
+      document.getElementById('last-sync').textContent = now;
+      document.getElementById('sync-dot').style.background = '#1D9E75';
+      showToast('✅ تمت المزامنة بنجاح!');
+    } else {
+      const err = await res.json();
+      showToast('❌ خطأ: ' + (err.error?.message || 'فشل الاتصال'));
+    }
+  } catch(e) {
+    showToast('❌ تحقق من الإنترنت');
+  }
+  btn.textContent = '☁️ مزامنة';
+  btn.disabled = false;
+}
+
+function exportCSV() {
+  if (!bookings.length) { showToast('⚠️ لا توجد بيانات'); return; }
+  const rows = [['الرقم','الاسم','الجوال','الهوية','الوصول','المغادرة','السعر','النوع','الحالة','الملاحظات']];
+  bookings.forEach((b,i) => rows.push([i+1,b.name,b.phone,b.idNum||'',b.checkin,b.checkout,b.price,b.type==='daily'?'يومي':'أسبوع',b.status==='confirmed'?'مؤكد':'معلق',b.notes||'']));
+  const csv = rows.map(r=>r.join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,\uFEFF' + encodeURIComponent(csv);
+  a.download = 'حجوزات_الشالية.csv';
+  a.click();
+  showToast('📥 تم التحميل');
+}
+
+function clearAll() {
+  if (!confirm('هل أنت متأكد من مسح جميع البيانات المحلية؟')) return;
+  bookings = [];
+  save(); renderList(); updateBackupStats();
+  showToast('🗑️ تم المسح');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+updateStats();
+</script>
+<script>if("serviceWorker" in navigator){navigator.serviceWorker.register("sw.js")}</script>
+</body>
+</html>
