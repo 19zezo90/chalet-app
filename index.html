@@ -1,0 +1,1131 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#1D9E75">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="شالية">
+<title>إدارة الشالية</title>
+<link rel="manifest" href="manifest.json">
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:#f0f4f8;direction:rtl;min-height:100vh}
+:root{--green:#1D9E75;--green-dark:#0F6E56;--green-light:#E1F5EE;--red:#e53935;--amber:#F57F17;--blue:#1565C0;--blue-light:#E3F2FD;--gray:#f5f5f5;--border:#e0e0e0;--text:#212121;--text2:#757575}
+
+.header{background:var(--green);padding:14px 16px;color:white;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.header h1{font-size:18px;font-weight:600}
+.sync-btn{background:rgba(255,255,255,0.2);border:none;color:white;padding:6px 12px;border-radius:20px;font-size:13px;cursor:pointer}
+
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:12px}
+.stat{background:white;border-radius:12px;padding:10px;text-align:center;border:1px solid var(--border)}
+.stat .n{font-size:22px;font-weight:700;color:var(--green)}
+.stat .l{font-size:11px;color:var(--text2);margin-top:2px}
+
+.tabs{display:flex;background:white;border-bottom:1px solid var(--border);position:sticky;top:54px;z-index:99}
+.tab{flex:1;padding:11px 4px;text-align:center;font-size:12px;cursor:pointer;color:var(--text2);border-bottom:3px solid transparent}
+.tab.active{color:var(--green);border-bottom-color:var(--green);font-weight:600}
+.tab-content{display:none}
+.tab-content.active{display:block}
+
+.section{padding:14px}
+.form-group{margin-bottom:12px}
+.form-group label{display:block;font-size:13px;color:var(--text2);margin-bottom:5px;font-weight:500}
+.form-group input,.form-group select{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;background:white;color:var(--text);font-family:inherit}
+.form-group input:focus,.form-group select:focus{outline:none;border-color:var(--green)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.form-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+
+.type-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.type-btn{padding:10px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;cursor:pointer;text-align:center;background:white;color:var(--text2);font-family:inherit}
+.type-btn.sel{background:var(--green-light);color:var(--green-dark);border-color:var(--green);font-weight:600}
+
+/* PAYMENT SECTION */
+.pay-section{background:#f8f9ff;border:1.5px solid #c5cae9;border-radius:12px;padding:14px;margin-bottom:12px}
+.pay-title{font-size:14px;font-weight:600;color:#283593;margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.pay-status-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:12px}
+.pay-status-btn{padding:8px 4px;border:1.5px solid var(--border);border-radius:8px;font-size:11px;cursor:pointer;text-align:center;background:white;color:var(--text2);font-family:inherit;line-height:1.4}
+.pay-status-btn.sel-paid{background:#E8F5E9;color:#1B5E20;border-color:#66BB6A;font-weight:600}
+.pay-status-btn.sel-deposit{background:#FFF8E1;color:#E65100;border-color:#FFA726;font-weight:600}
+.pay-status-btn.sel-debt{background:#FFEBEE;color:#B71C1C;border-color:#EF5350;font-weight:600}
+.pay-summary{background:white;border-radius:8px;padding:10px;border:1px solid var(--border);margin-top:8px}
+.pay-row{display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:13px}
+.pay-row:not(:last-child){border-bottom:1px solid #f5f5f5}
+.pay-label{color:var(--text2)}
+.pay-val{font-weight:600}
+.pay-val.green{color:var(--green)}
+.pay-val.red{color:#c62828}
+.pay-val.amber{color:#E65100}
+
+.btn-main{width:100%;padding:14px;background:var(--green);color:white;border:none;border-radius:12px;font-size:16px;cursor:pointer;font-weight:600;font-family:inherit;margin-top:4px}
+.btn-main:active{opacity:.85}
+
+/* DIVIDER */
+.divider{font-size:12px;font-weight:600;color:var(--text2);margin:16px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+
+/* CARDS */
+.res-card{background:white;border-radius:12px;padding:14px;margin-bottom:10px;border:1px solid var(--border)}
+.res-card.debt-card{border-right:4px solid #e53935}
+.res-card.deposit-card{border-right:4px solid #FFA726}
+.res-card.paid-card{border-right:4px solid var(--green)}
+.card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
+.card-name{font-size:16px;font-weight:600;color:var(--text)}
+.badges{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
+.badge{font-size:10px;padding:3px 7px;border-radius:20px;font-weight:500}
+.b-daily{background:#E3F2FD;color:#1565C0}
+.b-weekend{background:#FFF8E1;color:#E65100}
+.b-confirmed{background:var(--green-light);color:var(--green-dark)}
+.b-pending{background:#FFF3E0;color:#BF360C}
+.b-paid{background:#E8F5E9;color:#1B5E20}
+.b-deposit{background:#FFF8E1;color:#E65100}
+.b-debt{background:#FFEBEE;color:#B71C1C}
+.card-row{font-size:13px;color:var(--text2);margin-bottom:4px;display:flex;align-items:center;gap:6px}
+.card-pay-row{display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px solid #f5f5f5}
+.card-pay-row:last-child{border:none}
+.card-pay-section{background:#f8f8f8;border-radius:8px;padding:8px 10px;margin:8px 0}
+.card-actions{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:10px}
+.ca-btn{padding:7px;border-radius:8px;font-size:11px;cursor:pointer;text-align:center;border:1px solid;font-family:inherit;font-weight:500}
+.ca-green{background:var(--green-light);color:var(--green-dark);border-color:#5DCAA5}
+.ca-blue{background:#E3F2FD;color:#1565C0;border-color:#90CAF9}
+.ca-red{background:#FFEBEE;color:#C62828;border-color:#EF9A9A}
+.ca-amber{background:#FFF8E1;color:#E65100;border-color:#FFA726}
+
+.search-wrap{padding:12px 14px 0}
+.search-wrap input{width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;background:white;font-family:inherit}
+
+.filter-tabs{display:flex;gap:6px;padding:10px 14px 0;overflow-x:auto}
+.ftab{padding:5px 12px;border-radius:20px;font-size:12px;cursor:pointer;border:1px solid var(--border);background:white;color:var(--text2);white-space:nowrap;font-family:inherit}
+.ftab.active{background:var(--green);color:white;border-color:var(--green)}
+
+.backup-card{background:white;border-radius:12px;padding:16px;margin-bottom:12px;border:1px solid var(--border)}
+.backup-card h3{font-size:15px;font-weight:600;margin-bottom:10px}
+.status-row{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border)}
+.status-row:last-child{border:none}
+.status-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.status-text{font-size:13px;color:var(--text2);flex:1}
+.status-val{font-size:13px;font-weight:500}
+.btn-secondary{width:100%;padding:11px;background:var(--gray);color:var(--text);border:1.5px solid var(--border);border-radius:10px;font-size:14px;cursor:pointer;font-family:inherit;font-weight:500;margin-bottom:8px}
+
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#323232;color:white;padding:10px 20px;border-radius:24px;font-size:14px;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1}
+.empty{text-align:center;padding:40px 20px;color:var(--text2)}
+.empty-icon{font-size:48px;margin-bottom:10px}
+
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:center;justify-content:center;padding:20px}
+.overlay.show{display:flex}
+.modal{background:white;border-radius:16px;padding:24px;width:100%;max-width:340px;text-align:center}
+.modal-icon{font-size:48px;margin-bottom:10px}
+.modal h3{font-size:18px;font-weight:600;margin-bottom:8px}
+.modal p{font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.6}
+.modal-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.modal-btns button{padding:11px;border-radius:10px;font-size:14px;cursor:pointer;font-family:inherit;font-weight:500}
+.mb-green{background:var(--green);color:white;border:none}
+.mb-gray{background:var(--gray);color:var(--text);border:1px solid var(--border)}
+
+.login-screen{position:fixed;inset:0;background:var(--green);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;padding:30px}
+.login-box{background:white;border-radius:20px;padding:30px 24px;width:100%;max-width:340px;text-align:center}
+.login-logo{font-size:52px;margin-bottom:8px}
+.login-title{font-size:20px;font-weight:600;color:#1D9E75;margin-bottom:4px}
+.login-sub{font-size:13px;color:var(--text2);margin-bottom:24px}
+.login-input{width:100%;padding:12px 16px;border:1.5px solid var(--border);border-radius:12px;font-size:16px;text-align:center;letter-spacing:4px;font-family:inherit;margin-bottom:12px}
+.login-input:focus{outline:none;border-color:#1D9E75}
+.login-btn{width:100%;padding:13px;background:#1D9E75;color:white;border:none;border-radius:12px;font-size:16px;font-weight:600;cursor:pointer;font-family:inherit}
+.login-btn:active{opacity:.85}
+.login-error{color:#e53935;font-size:13px;margin-top:8px;display:none}
+</style>
+</head>
+<body>
+
+
+<div id="login-screen" class="login-screen">
+  <div class="login-box">
+    <div class="login-logo">🏡</div>
+    <div class="login-title">شالية كام دون</div>
+    <div class="login-sub">Calm Down Chalet</div>
+    <input type="password" id="pin-input" class="login-input" placeholder="● ● ● ●" maxlength="6" onkeydown="if(event.key==='Enter')checkPin()">
+    <button class="login-btn" onclick="checkPin()">🔓 دخول</button>
+    <div class="login-error" id="pin-error">❌ كلمة المرور غير صحيحة</div>
+  </div>
+</div>
+
+<div class="header">
+  <button class="sync-btn" onclick="syncToSheets()" id="syncBtn">☁️ مزامنة</button>
+  <h1>🏡 شالية</h1>
+</div>
+
+<div class="stats">
+  <div class="stat"><div class="n" id="s-total">0</div><div class="l">إجمالي</div></div>
+  <div class="stat"><div class="n" id="s-confirmed">0</div><div class="l">مؤكدة</div></div>
+  <div class="stat"><div class="n" id="s-debt" style="color:#e53935">0</div><div class="l">ديون</div></div>
+</div>
+
+
+<!-- REMINDERS BANNER -->
+<div id="reminders-banner" style="display:none;margin:0 12px 4px;border-radius:12px;overflow:hidden"></div>
+
+<div class="tabs">
+  <div class="tab active" onclick="showTab('new',this)">➕ حجز</div>
+  <div class="tab" onclick="showTab('list',this)">📋 الحجوزات</div>
+  <div class="tab" onclick="showTab('expenses',this)">💸 المصروفات</div>
+  <div class="tab" onclick="showTab('reminders',this)">🔔 التذكيرات</div>
+  <div class="tab" onclick="showTab('offers',this)">📣 العروض</div>
+  <div class="tab" onclick="showTab('backup',this)">☁️ النسخ</div>
+</div>
+
+<!-- NEW BOOKING -->
+<div id="tab-new" class="tab-content active">
+<div class="section">
+  <div class="type-grid">
+    <button class="type-btn sel" id="t-daily" onclick="setType('daily')">🌅 يومي</button>
+    <button class="type-btn" id="t-weekend" onclick="setType('weekend')">🎉 نهاية أسبوع</button>
+  </div>
+
+  <div class="form-group">
+    <label>👤 اسم العميل</label>
+    <input type="text" id="f-name" placeholder="الاسم الكامل">
+  </div>
+  <div class="form-group">
+    <label>📱 رقم الجوال</label>
+    <input type="tel" id="f-phone" placeholder="05xxxxxxxx">
+  </div>
+  <div class="form-group">
+    <label>🪪 رقم الهوية</label>
+    <input type="text" id="f-id" placeholder="1xxxxxxxxx">
+  </div>
+
+  <div class="divider">📅 مواعيد الإقامة</div>
+  <div class="form-row">
+    <div class="form-group">
+      <label>تاريخ الوصول</label>
+      <input type="date" id="f-checkin">
+    </div>
+    <div class="form-group">
+      <label>وقت الوصول</label>
+      <input type="time" id="f-checkin-time" value="14:00">
+    </div>
+  </div>
+  <div class="form-row">
+    <div class="form-group">
+      <label>تاريخ المغادرة</label>
+      <input type="date" id="f-checkout">
+    </div>
+    <div class="form-group">
+      <label>وقت المغادرة</label>
+      <input type="time" id="f-checkout-time" value="12:00">
+    </div>
+  </div>
+
+  <div class="divider">💰 تفاصيل الدفع</div>
+  <div class="pay-section">
+    <div class="pay-title">💳 حالة الدفع</div>
+    <div class="pay-status-grid">
+      <button class="pay-status-btn" id="ps-paid" onclick="setPayStatus('paid')">✅ مدفوع<br>بالكامل</button>
+      <button class="pay-status-btn sel-deposit" id="ps-deposit" onclick="setPayStatus('deposit')">💵 عربون<br>مدفوع</button>
+      <button class="pay-status-btn" id="ps-debt" onclick="setPayStatus('debt')">⚠️ دين<br>كامل</button>
+    </div>
+    <div class="form-group" style="margin-bottom:8px">
+      <label>السعر الإجمالي (ريال)</label>
+      <input type="number" id="f-price" placeholder="0" oninput="calcPayment()">
+    </div>
+    <div id="deposit-field" class="form-group" style="margin-bottom:8px">
+      <label>العربون المدفوع (ريال)</label>
+      <input type="number" id="f-deposit" placeholder="0" oninput="calcPayment()">
+    </div>
+    <div class="pay-summary" id="pay-summary">
+      <div class="pay-row"><span class="pay-label">السعر الإجمالي</span><span class="pay-val" id="ps-total">0 ريال</span></div>
+      <div class="pay-row"><span class="pay-label">المدفوع</span><span class="pay-val green" id="ps-paid-val">0 ريال</span></div>
+      <div class="pay-row"><span class="pay-label">المتبقي</span><span class="pay-val red" id="ps-remaining">0 ريال</span></div>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label>📝 ملاحظات</label>
+    <input type="text" id="f-notes" placeholder="أي ملاحظات إضافية...">
+  </div>
+  <button class="btn-main" onclick="addBooking()">✅ تأكيد الحجز</button>
+</div>
+</div>
+
+<!-- LIST TAB -->
+<div id="tab-list" class="tab-content">
+  <div class="search-wrap">
+    <input type="text" id="search" placeholder="🔍 ابحث باسم العميل..." oninput="renderList()">
+  </div>
+  <div class="filter-tabs">
+    <button class="ftab active" onclick="setFilter('all',this)">الكل</button>
+    <button class="ftab" onclick="setFilter('confirmed',this)">✅ مؤكدة</button>
+    <button class="ftab" onclick="setFilter('pending',this)">⏳ معلقة</button>
+    <button class="ftab" onclick="setFilter('debt',this)">⚠️ ديون</button>
+    <button class="ftab" onclick="setFilter('deposit',this)">💵 عربون</button>
+  </div>
+  <div class="section" id="list-container"></div>
+</div>
+
+
+
+<!-- REMINDERS TAB -->
+<div id="tab-reminders" class="tab-content">
+<div class="section">
+
+  <div id="reminders-today" style="margin-bottom:14px"></div>
+  <div id="reminders-upcoming" style="margin-bottom:14px"></div>
+  <div id="reminders-empty" style="display:none" class="empty">
+    <div class="empty-icon">🔔</div>
+    <p>لا توجد تذكيرات قادمة</p>
+  </div>
+
+</div>
+</div>
+
+<!-- EXPENSES TAB -->
+<div id="tab-expenses" class="tab-content">
+<div class="section">
+  <div class="divider">➕ تسجيل مصروف جديد</div>
+  <div class="form-group">
+    <label>📂 الفئة</label>
+    <select id="e-cat">
+      <option value="صيانة">🔧 صيانة</option>
+      <option value="تنظيف">🧹 تنظيف</option>
+      <option value="كهرباء">💡 كهرباء</option>
+      <option value="ماء">💧 ماء</option>
+      <option value="مستلزمات">🛒 مستلزمات</option>
+      <option value="إيجار">🏠 إيجار</option>
+      <option value="أخرى">📌 أخرى</option>
+    </select>
+  </div>
+  <div class="form-group">
+    <label>📝 الوصف</label>
+    <input type="text" id="e-desc" placeholder="وصف المصروف...">
+  </div>
+  <div class="form-row">
+    <div class="form-group">
+      <label>💰 المبلغ (ريال)</label>
+      <input type="number" id="e-amount" placeholder="0">
+    </div>
+    <div class="form-group">
+      <label>📅 التاريخ</label>
+      <input type="date" id="e-date">
+    </div>
+  </div>
+  <button class="btn-main" onclick="addExpense()">💸 تسجيل المصروف</button>
+
+  <div class="divider" style="margin-top:20px">📊 ملخص مالي</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+    <div class="stat" style="border-right:3px solid var(--green)"><div class="n" id="e-income">0</div><div class="l">إيرادات محصّلة</div></div>
+    <div class="stat" style="border-right:3px solid #e53935"><div class="n" id="e-total-exp" style="color:#e53935">0</div><div class="l">إجمالي المصروفات</div></div>
+  </div>
+  <div class="backup-card" style="margin-bottom:14px">
+    <div class="status-row"><div class="status-text">صافي الربح</div><div class="status-val" id="e-profit" style="font-size:16px">0 ريال</div></div>
+  </div>
+
+  <div class="divider">📋 سجل المصروفات</div>
+  <div id="expenses-list"></div>
+</div>
+</div>
+
+
+<!-- OFFERS TAB -->
+<div id="tab-offers" class="tab-content">
+<div class="section">
+
+  <div class="divider">✍️ كتابة العرض</div>
+  <div class="form-group">
+    <label>🏷️ عنوان العرض</label>
+    <input type="text" id="o-title" placeholder="مثال: عرض نهاية الأسبوع 🎉">
+  </div>
+  <div class="form-group">
+    <label>📝 نص العرض</label>
+    <textarea id="o-body" rows="7" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;background:white;color:var(--text);font-family:inherit;resize:vertical" placeholder="اكتب نص العرض هنا...&#10;&#10;مثال:&#10;🌿 عرض خاص لنهاية الأسبوع&#10;ليلتان بسعر ليلة واحدة فقط!&#10;📞 للحجز: 05xxxxxxxx"></textarea>
+  </div>
+
+  <div class="divider">👁️ معاينة الرسالة</div>
+  <div id="o-preview" style="background:#f0f8f4;border:1.5px solid #5DCAA5;border-radius:10px;padding:14px;margin-bottom:14px;font-size:14px;color:var(--text);white-space:pre-wrap;min-height:80px;line-height:1.7">ستظهر المعاينة هنا...</div>
+
+  <button class="btn-main" onclick="sendOfferWA()" style="background:#25D366;margin-bottom:10px">
+    📲 إرسال العرض عبر واتساب
+  </button>
+  <button class="btn-secondary" onclick="copyOffer()">📋 نسخ نص العرض</button>
+
+  <div class="divider" style="margin-top:20px">💾 العروض المحفوظة</div>
+  <button class="btn-secondary" onclick="saveOffer()">💾 حفظ هذا العرض</button>
+  <div id="saved-offers-list" style="margin-top:10px"></div>
+
+</div>
+</div>
+
+<!-- BACKUP TAB -->
+<div id="tab-backup" class="tab-content">
+<div class="section">
+  <div class="backup-card">
+    <h3>☁️ حالة Google Sheets</h3>
+    <a href="https://docs.google.com/spreadsheets/d/1Gn74OrgRdJsqPXRD3rfeTbRhL5dkL_NRhSkC7COrat8" target="_blank" style="display:block;text-align:center;background:#E8F5E9;color:#1B5E20;padding:8px;border-radius:8px;font-size:13px;font-weight:500;text-decoration:none;margin-bottom:10px">📊 فتح جدول Google Sheets</a>
+    <div class="status-row">
+      <div class="status-dot" style="background:var(--green)"></div>
+      <div class="status-text">الاتصال</div>
+      <div class="status-val">✅ جاهز</div>
+    </div>
+    <div class="status-row">
+      <div class="status-dot" id="sync-dot" style="background:#bdbdbd"></div>
+      <div class="status-text">آخر مزامنة</div>
+      <div class="status-val" id="last-sync">لم تتم بعد</div>
+    </div>
+  </div>
+  <button class="btn-main" onclick="syncToSheets()" style="margin-bottom:10px">☁️ مزامنة مع Google Sheets</button>
+  <button class="btn-secondary" onclick="exportCSV()">📥 تحميل ملف Excel (.xlsx)</button>
+  <button class="btn-secondary" onclick="clearAll()">🗑️ مسح البيانات المحلية</button>
+  <div class="backup-card" style="margin-top:4px">
+    <h3>📊 إحصائيات مالية</h3>
+    <div class="status-row"><div class="status-text">إجمالي الحجوزات</div><div class="status-val" id="b-total">0</div></div>
+    <div class="status-row"><div class="status-text">إجمالي الإيرادات</div><div class="status-val" id="b-revenue">0 ريال</div></div>
+    <div class="status-row"><div class="status-text">المبالغ المحصّلة</div><div class="status-val" id="b-collected" style="color:var(--green)">0 ريال</div></div>
+    <div class="status-row"><div class="status-text">المبالغ المتبقية</div><div class="status-val" id="b-remaining" style="color:#e53935">0 ريال</div></div>
+    <div class="status-row"><div class="status-text">إجمالي المصروفات</div><div class="status-val" id="b-expenses" style="color:#e53935">0 ريال</div></div>
+    <div class="status-row"><div class="status-text" style="font-weight:600">صافي الربح</div><div class="status-val" id="b-profit" style="color:var(--green);font-size:15px">0 ريال</div></div>
+  </div>
+</div>
+</div>
+
+<!-- MODAL -->
+<div class="overlay" id="modal">
+  <div class="modal">
+    <div class="modal-icon">🎉</div>
+    <h3>تم تأكيد الحجز!</h3>
+    <p id="modal-msg"></p>
+    <div class="modal-btns">
+      <button class="mb-gray" onclick="closeModal()">إغلاق</button>
+      <button class="mb-green" onclick="sendWhatsApp()">📲 واتساب</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+
+let bookings = JSON.parse(localStorage.getItem('chalet_bookings') || '[]');
+let selType = 'daily';
+let selPayStatus = 'deposit';
+let lastBooking = null;
+let activeFilter = 'all';
+
+const today = new Date().toISOString().split('T')[0];
+document.getElementById('f-checkin').value = today;
+document.getElementById('f-checkin').min = today;
+document.getElementById('f-checkout').min = today;
+document.getElementById('f-checkin').addEventListener('change', e => {
+  document.getElementById('f-checkout').min = e.target.value;
+});
+
+function save() { localStorage.setItem('chalet_bookings', JSON.stringify(bookings)); updateStats(); checkReminders(); }
+
+function showTab(tab, el) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  el.classList.add('active');
+  if (tab === 'list') renderList();
+  if (tab === 'backup') updateBackupStats();
+  if (tab === 'expenses') { renderExpenses(); updateExpenseSummary(); }
+  if (tab === 'reminders') { renderReminders(); }
+  if (tab === 'offers') { renderSavedOffers(); updateOfferPreview(); }
+}
+
+function setType(t) {
+  selType = t;
+  document.getElementById('t-daily').classList.toggle('sel', t==='daily');
+  document.getElementById('t-weekend').classList.toggle('sel', t==='weekend');
+}
+
+function setPayStatus(s) {
+  selPayStatus = s;
+  ['paid','deposit','debt'].forEach(x => {
+    const btn = document.getElementById('ps-'+x);
+    btn.className = 'pay-status-btn' + (x===s ? ' sel-'+x : '');
+  });
+  document.getElementById('deposit-field').style.display = (s==='deposit') ? 'block' : 'none';
+  if(s==='paid') { document.getElementById('f-deposit').value = document.getElementById('f-price').value || 0; }
+  if(s==='debt') { document.getElementById('f-deposit').value = 0; }
+  calcPayment();
+}
+
+function calcPayment() {
+  const total = parseFloat(document.getElementById('f-price').value) || 0;
+  let paid = 0;
+  if(selPayStatus==='paid') paid = total;
+  else if(selPayStatus==='deposit') paid = parseFloat(document.getElementById('f-deposit').value) || 0;
+  else paid = 0;
+  const remaining = total - paid;
+  document.getElementById('ps-total').textContent = total.toLocaleString() + ' ريال';
+  document.getElementById('ps-paid-val').textContent = paid.toLocaleString() + ' ريال';
+  document.getElementById('ps-remaining').textContent = remaining.toLocaleString() + ' ريال';
+}
+
+function addBooking() {
+  const name = document.getElementById('f-name').value.trim();
+  const phone = document.getElementById('f-phone').value.trim();
+  const idNum = document.getElementById('f-id').value.trim();
+  const checkin = document.getElementById('f-checkin').value;
+  const checkinTime = document.getElementById('f-checkin-time').value;
+  const checkout = document.getElementById('f-checkout').value;
+  const checkoutTime = document.getElementById('f-checkout-time').value;
+  const price = parseFloat(document.getElementById('f-price').value) || 0;
+  const notes = document.getElementById('f-notes').value.trim();
+  if (!name || !phone || !checkin || !checkout || !price) { showToast('⚠️ يرجى تعبئة جميع الحقول'); return; }
+  let depositAmt = 0;
+  if(selPayStatus==='paid') depositAmt = price;
+  else if(selPayStatus==='deposit') depositAmt = parseFloat(document.getElementById('f-deposit').value) || 0;
+  const b = {
+    id: Date.now(), name, phone, idNum, checkin, checkinTime, checkout, checkoutTime,
+    price, deposit: depositAmt, payStatus: selPayStatus,
+    remaining: price - depositAmt, notes, type: selType,
+    status: 'pending', created: new Date().toLocaleDateString('ar-SA')
+  };
+  bookings.unshift(b);
+  lastBooking = b;
+  save();
+  const payLabel = selPayStatus==='paid'?'مدفوع بالكامل':selPayStatus==='deposit'?`عربون ${depositAmt.toLocaleString()} ريال`:'دين كامل';
+  document.getElementById('modal-msg').innerHTML = `<b>${name}</b><br>${checkin} ${checkinTime} ← ${checkout} ${checkoutTime}<br>السعر: ${price.toLocaleString()} ريال<br>الدفع: ${payLabel}`;
+  document.getElementById('modal').classList.add('show');
+  clearForm();
+}
+
+function clearForm() {
+  ['f-name','f-phone','f-id','f-price','f-notes','f-deposit'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('f-checkin').value = today;
+  document.getElementById('f-checkout').value = '';
+  document.getElementById('f-checkin-time').value = '14:00';
+  document.getElementById('f-checkout-time').value = '12:00';
+  setPayStatus('deposit');
+checkReminders();
+  calcPayment();
+}
+
+function closeModal() { document.getElementById('modal').classList.remove('show'); }
+
+function buildMsg(b) {
+  const payLine = b.payStatus==='paid'?'✅ مدفوع بالكامل':b.payStatus==='deposit'?`💵 عربون: ${(b.deposit||0).toLocaleString()} ريال — المتبقي: ${(b.remaining||0).toLocaleString()} ريال`:`⚠️ المبلغ المستحق: ${b.price.toLocaleString()} ريال`;
+  return `🌿 أهلاً وسهلاً ${b.name} 🌿
+يسعد شالية كام دون | Calm Down Chalet تأكيد حجزكم،
+ونتطلع بكل سرور لاستقبالكم وقضاء أوقات جميلة مليئة بالراحة والهدوء ✨
+
+📋 تفاصيل الحجز
+
+📅 تاريخ الدخول
+${formatDate(b.checkin)}
+🕔 وقت الدخول
+${formatTime(b.checkinTime)}
+
+📅 تاريخ الخروج
+${formatDate(b.checkout)}
+🕚 وقت الخروج
+${formatTime(b.checkoutTime)}
+
+💰 الدفع
+${payLine}
+${b.notes?'\n📝 ملاحظات: '+b.notes:''}
+
+📍 موقع الشالية
+https://maps.app.goo.gl/jssQ4yr8mZkEhDoC6
+
+📞 للتواصل والاستفسارات
+0531082310
+0561069169
+
+✨ نتمنى لكم إقامة ممتعة وأجواء رائعة،
+ونسعد كثيراً بزيارتكم ونتشرف باستقبالكم 🌙🏡
+مع خالص التحية والتقدير،
+Calm Down Chalet
+🏡 شالية كام دون`;
+}
+
+function formatDate(d) {
+  if(!d) return '';
+  const days = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+  const months = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+  const dt = new Date(d);
+  return `${days[dt.getDay()]} | ${String(dt.getDate()).padStart(2,'0')} ${months[dt.getMonth()]} ${dt.getFullYear()}`;
+}
+
+function formatTime(t) {
+  if(!t) return '';
+  const [h,m] = t.split(':').map(Number);
+  const period = h >= 12 ? 'مساءً' : 'صباحاً';
+  const h12 = h % 12 || 12;
+  return `${h12}:${String(m).padStart(2,'0')} ${period}`;
+}
+
+function sendWhatsApp() {
+  if (!lastBooking) return;
+  window.open('https://wa.me/966' + lastBooking.phone.replace(/^0/,'') + '?text=' + encodeURIComponent(buildMsg(lastBooking)));
+  closeModal();
+}
+
+function setFilter(f, el) {
+  activeFilter = f;
+  document.querySelectorAll('.ftab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  renderList();
+}
+
+function renderList() {
+  const q = (document.getElementById('search')?.value || '').toLowerCase();
+  let filtered = bookings.filter(b => b.name.toLowerCase().includes(q));
+  if(activeFilter==='confirmed') filtered = filtered.filter(b=>b.status==='confirmed');
+  else if(activeFilter==='pending') filtered = filtered.filter(b=>b.status==='pending');
+  else if(activeFilter==='debt') filtered = filtered.filter(b=>b.payStatus==='debt');
+  else if(activeFilter==='deposit') filtered = filtered.filter(b=>b.payStatus==='deposit');
+  const el = document.getElementById('list-container');
+  if (!filtered.length) { el.innerHTML = '<div class="empty"><div class="empty-icon">📭</div><p>لا توجد حجوزات</p></div>'; return; }
+  el.innerHTML = filtered.map(b => {
+    const cardClass = b.payStatus==='debt'?'debt-card':b.payStatus==='deposit'?'deposit-card':'paid-card';
+    const payBadge = b.payStatus==='paid'?'b-paid" >✅ مدفوع':b.payStatus==='deposit'?'b-deposit" >💵 عربون':'b-debt" >⚠️ دين';
+    const remaining = b.remaining || (b.price - (b.deposit||0));
+    return `<div class="res-card ${cardClass}">
+      <div class="card-top">
+        <div class="card-name">${b.name}</div>
+        <div class="badges">
+          <span class="badge ${b.type==='daily'?'b-daily':'b-weekend'}">${b.type==='daily'?'🌅 يومي':'🎉 أسبوع'}</span>
+          <span class="badge ${b.status==='confirmed'?'b-confirmed':'b-pending'}">${b.status==='confirmed'?'✅ مؤكد':'⏳ معلق'}</span>
+          <span class="badge ${payBadge}</span>
+        </div>
+      </div>
+      <div class="card-row">📱 ${b.phone}${b.idNum?' &nbsp;|&nbsp; 🪪 '+b.idNum:''}</div>
+      <div class="card-row">📅 ${b.checkin} ${b.checkinTime||''} ← ${b.checkout} ${b.checkoutTime||''}</div>
+      <div class="card-pay-section">
+        <div class="card-pay-row"><span style="color:var(--text2)">السعر الإجمالي</span><span style="font-weight:600">${b.price.toLocaleString()} ريال</span></div>
+        <div class="card-pay-row"><span style="color:var(--text2)">المدفوع</span><span style="color:var(--green);font-weight:600">${(b.deposit||0).toLocaleString()} ريال</span></div>
+        ${remaining>0?`<div class="card-pay-row"><span style="color:var(--text2)">المتبقي</span><span style="color:#c62828;font-weight:600">${remaining.toLocaleString()} ريال</span></div>`:''}
+      </div>
+      ${b.notes?`<div class="card-row">📝 ${b.notes}</div>`:''}
+      <div class="card-actions">
+        <button class="ca-btn ca-green" onclick="confirm_b(${b.id})">✅ تأكيد</button>
+        <button class="ca-btn ca-blue" onclick="wa_b(${b.id})">📲 واتساب</button>
+        <button class="ca-btn ca-red" onclick="delete_b(${b.id})">🗑️ حذف</button>
+      </div>
+      ${remaining>0?`<button class="ca-btn ca-amber" style="width:100%;margin-top:6px" onclick="markPaid(${b.id})">💰 تسجيل استلام المتبقي</button>`:''}
+    </div>`;
+  }).join('');
+}
+
+function confirm_b(id) { const b=bookings.find(x=>x.id===id); if(b){b.status='confirmed';save();renderList();showToast('✅ تم التأكيد');} }
+function markPaid(id) { const b=bookings.find(x=>x.id===id); if(b){b.deposit=b.price;b.remaining=0;b.payStatus='paid';save();renderList();showToast('💰 تم تسجيل الدفع الكامل');} }
+function delete_b(id) { if(!confirm('هل تريد حذف هذا الحجز؟'))return; bookings=bookings.filter(x=>x.id!==id); save();renderList();showToast('🗑️ تم الحذف'); }
+
+function wa_b(id) {
+  const b=bookings.find(x=>x.id===id); if(!b)return;
+  window.open('https://wa.me/966'+b.phone.replace(/^0/,'')+'?text='+encodeURIComponent(buildMsg(b)));
+}
+
+
+let expenses = JSON.parse(localStorage.getItem('chalet_expenses') || '[]');
+
+function saveExpenses() { localStorage.setItem('chalet_expenses', JSON.stringify(expenses)); }
+
+function addExpense() {
+  const cat = document.getElementById('e-cat').value;
+  const desc = document.getElementById('e-desc').value.trim();
+  const amount = parseFloat(document.getElementById('e-amount').value) || 0;
+  const date = document.getElementById('e-date').value;
+  if (!amount || !date) { showToast('⚠️ أدخل المبلغ والتاريخ'); return; }
+  expenses.unshift({ id: Date.now(), cat, desc, amount, date });
+  saveExpenses();
+  document.getElementById('e-desc').value = '';
+  document.getElementById('e-amount').value = '';
+  renderExpenses();
+  updateExpenseSummary();
+  showToast('✅ تم تسجيل المصروف');
+}
+
+function renderExpenses() {
+  const el = document.getElementById('expenses-list');
+  if (!el) return;
+  if (!expenses.length) { el.innerHTML = '<div class="empty"><div class="empty-icon">📭</div><p>لا توجد مصروفات</p></div>'; return; }
+  const catIcons = {'صيانة':'🔧','تنظيف':'🧹','كهرباء':'💡','ماء':'💧','مستلزمات':'🛒','إيجار':'🏠','أخرى':'📌'};
+  el.innerHTML = expenses.map(e => `
+    <div class="res-card" style="border-right:3px solid #e53935">
+      <div class="card-top">
+        <div><span style="font-size:13px;color:var(--text2)">${catIcons[e.cat]||'📌'} ${e.cat}</span><br><span style="font-size:15px;font-weight:600">${e.desc||'—'}</span></div>
+        <div style="text-align:left">
+          <div style="font-size:18px;font-weight:700;color:#e53935">${e.amount.toLocaleString()}</div>
+          <div style="font-size:11px;color:var(--text2)">ريال</div>
+        </div>
+      </div>
+      <div class="card-row">📅 ${e.date}</div>
+      <div style="margin-top:8px;text-align:left">
+        <button class="ca-btn ca-red" style="padding:6px 14px" onclick="deleteExpense(${e.id})">🗑️ حذف</button>
+      </div>
+    </div>`).join('');
+}
+
+function deleteExpense(id) {
+  if (!confirm('حذف هذا المصروف؟')) return;
+  expenses = expenses.filter(e => e.id !== id);
+  saveExpenses(); renderExpenses(); updateExpenseSummary(); showToast('🗑️ تم الحذف');
+}
+
+function updateExpenseSummary() {
+  const totalExp = expenses.reduce((s,e) => s+e.amount, 0);
+  const totalIncome = bookings.reduce((s,b) => s+(b.deposit||0), 0);
+  const profit = totalIncome - totalExp;
+  const profitEl = document.getElementById('e-profit');
+  if (document.getElementById('e-income')) document.getElementById('e-income').textContent = totalIncome.toLocaleString()+' ر';
+  if (document.getElementById('e-total-exp')) document.getElementById('e-total-exp').textContent = totalExp.toLocaleString()+' ر';
+  if (profitEl) { profitEl.textContent = profit.toLocaleString()+' ريال'; profitEl.style.color = profit>=0?'var(--green)':'#e53935'; }
+  if (document.getElementById('b-expenses')) document.getElementById('b-expenses').textContent = totalExp.toLocaleString()+' ريال';
+  if (document.getElementById('b-profit')) { document.getElementById('b-profit').textContent = profit.toLocaleString()+' ريال'; document.getElementById('b-profit').style.color = profit>=0?'var(--green)':'#e53935'; }
+}
+
+
+let savedOffers = JSON.parse(localStorage.getItem('chalet_offers') || '[]');
+
+function buildOfferMsg() {
+  const title = document.getElementById('o-title').value.trim();
+  const body = document.getElementById('o-body').value.trim();
+  if (!title && !body) return '';
+  return (title ? title + '\n' + '─'.repeat(20) + '\n' : '') + body;
+}
+
+function updateOfferPreview() {
+  const msg = buildOfferMsg();
+  const el = document.getElementById('o-preview');
+  if (el) el.textContent = msg || 'ستظهر المعاينة هنا...';
+}
+
+function sendOfferWA() {
+  const msg = buildOfferMsg();
+  if (!msg) { showToast('⚠️ اكتب نص العرض أولاً'); return; }
+  window.open('https://wa.me/?text=' + encodeURIComponent(msg));
+}
+
+function copyOffer() {
+  const msg = buildOfferMsg();
+  if (!msg) { showToast('⚠️ لا يوجد نص'); return; }
+  navigator.clipboard.writeText(msg).then(() => showToast('✅ تم النسخ!'));
+}
+
+function saveOffer() {
+  const title = document.getElementById('o-title').value.trim();
+  const body = document.getElementById('o-body').value.trim();
+  if (!title && !body) { showToast('⚠️ اكتب العرض أولاً'); return; }
+  savedOffers.unshift({ id: Date.now(), title, body, date: new Date().toLocaleDateString('ar-SA') });
+  localStorage.setItem('chalet_offers', JSON.stringify(savedOffers));
+  renderSavedOffers();
+  showToast('💾 تم الحفظ');
+}
+
+function renderSavedOffers() {
+  const el = document.getElementById('saved-offers-list');
+  if (!el) return;
+  if (!savedOffers.length) { el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text2);font-size:13px">لا توجد عروض محفوظة</div>'; return; }
+  el.innerHTML = savedOffers.map(o => `
+    <div class="res-card" style="border-right:3px solid #25D366">
+      <div class="card-top">
+        <div style="font-size:15px;font-weight:600">${o.title||'بدون عنوان'}</div>
+        <div style="font-size:11px;color:var(--text2)">${o.date}</div>
+      </div>
+      <div style="font-size:13px;color:var(--text2);margin-bottom:10px;white-space:pre-wrap">${(o.body||'').substring(0,100)}${o.body&&o.body.length>100?'...':''}</div>
+      <div class="card-actions">
+        <button class="ca-btn ca-green" onclick="loadOffer(${o.id})">📝 تحميل</button>
+        <button class="ca-btn ca-blue" onclick="sendSavedOffer(${o.id})">📲 إرسال</button>
+        <button class="ca-btn ca-red" onclick="deleteSavedOffer(${o.id})">🗑️ حذف</button>
+      </div>
+    </div>`).join('');
+}
+
+function loadOffer(id) {
+  const o = savedOffers.find(x => x.id===id);
+  if (!o) return;
+  document.getElementById('o-title').value = o.title||'';
+  document.getElementById('o-body').value = o.body||'';
+  updateOfferPreview();
+  showToast('✅ تم تحميل العرض');
+}
+
+function sendSavedOffer(id) {
+  const o = savedOffers.find(x => x.id===id);
+  if (!o) return;
+  const msg = (o.title ? o.title + '\n' + '─'.repeat(20) + '\n' : '') + (o.body||'');
+  window.open('https://wa.me/?text=' + encodeURIComponent(msg));
+}
+
+function deleteSavedOffer(id) {
+  if (!confirm('حذف هذا العرض؟')) return;
+  savedOffers = savedOffers.filter(x => x.id!==id);
+  localStorage.setItem('chalet_offers', JSON.stringify(savedOffers));
+  renderSavedOffers();
+  showToast('🗑️ تم الحذف');
+}
+
+
+function checkReminders() {
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate()+1);
+  const dayAfter = new Date(today); dayAfter.setDate(dayAfter.getDate()+2);
+
+  const checkinToday=[], checkinTomorrow=[], checkoutToday=[], checkoutTomorrow=[];
+
+  bookings.forEach(b => {
+    if(b.status==='confirmed'||b.status==='pending') {
+      const cin = new Date(b.checkin); cin.setHours(0,0,0,0);
+      const cout = new Date(b.checkout); cout.setHours(0,0,0,0);
+      if(cin.getTime()===today.getTime()) checkinToday.push(b);
+      else if(cin.getTime()===tomorrow.getTime()) checkinTomorrow.push(b);
+      if(cout.getTime()===today.getTime()) checkoutToday.push(b);
+      else if(cout.getTime()===tomorrow.getTime()) checkoutTomorrow.push(b);
+    }
+  });
+
+  const banner = document.getElementById('reminders-banner');
+  let html = '';
+
+  checkinToday.forEach(b => {
+    html += `<div style="background:#E8F5E9;border-right:4px solid #2E7D32;padding:12px 14px;margin-bottom:4px;display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div style="font-size:13px;font-weight:600;color:#1B5E20">🏡 دخول اليوم — ${b.checkinTime||''}</div>
+        <div style="font-size:12px;color:#2E7D32">${b.name} | ${b.phone}</div>
+      </div>
+      <button onclick="sendReminderWA(${b.id},'checkin')" style="background:#25D366;color:white;border:none;border-radius:8px;padding:7px 10px;font-size:12px;cursor:pointer">📲 تذكير</button>
+    </div>`;
+  });
+
+  checkinTomorrow.forEach(b => {
+    html += `<div style="background:#FFF8E1;border-right:4px solid #F9A825;padding:12px 14px;margin-bottom:4px;display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div style="font-size:13px;font-weight:600;color:#E65100">📅 دخول غداً — ${b.checkinTime||''}</div>
+        <div style="font-size:12px;color:#F57F17">${b.name} | ${b.phone}</div>
+      </div>
+      <button onclick="sendReminderWA(${b.id},'checkin')" style="background:#25D366;color:white;border:none;border-radius:8px;padding:7px 10px;font-size:12px;cursor:pointer">📲 تذكير</button>
+    </div>`;
+  });
+
+  checkoutToday.forEach(b => {
+    html += `<div style="background:#FBE9E7;border-right:4px solid #BF360C;padding:12px 14px;margin-bottom:4px;display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div style="font-size:13px;font-weight:600;color:#BF360C">🚪 خروج اليوم — ${b.checkoutTime||''}</div>
+        <div style="font-size:12px;color:#D84315">${b.name} | ${b.phone}</div>
+      </div>
+      <div style="display:flex;gap:6px;flex-direction:column">
+        <button onclick="sendReminderWA(${b.id},'checkout')" style="background:#25D366;color:white;border:none;border-radius:8px;padding:7px 10px;font-size:12px;cursor:pointer">📲 تذكير خروج</button>
+        <button onclick="sendReviewRequest('${b.phone}','${b.name}')" style="background:#FBBC04;color:#333;border:none;border-radius:8px;padding:7px 10px;font-size:12px;cursor:pointer">⭐ طلب تقييم</button>
+      </div>
+    </div>`;
+  });
+
+  checkoutTomorrow.forEach(b => {
+    html += `<div style="background:#F3E5F5;border-right:4px solid #7B1FA2;padding:12px 14px;margin-bottom:4px;display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div style="font-size:13px;font-weight:600;color:#6A1B9A">🚪 خروج غداً — ${b.checkoutTime||''}</div>
+        <div style="font-size:12px;color:#8E24AA">${b.name} | ${b.phone}</div>
+      </div>
+      <div style="display:flex;gap:6px;flex-direction:column">
+        <button onclick="sendReminderWA(${b.id},'checkout')" style="background:#25D366;color:white;border:none;border-radius:8px;padding:7px 10px;font-size:12px;cursor:pointer">📲 تذكير خروج</button>
+        <button onclick="sendReviewRequest('${b.phone}','${b.name}')" style="background:#FBBC04;color:#333;border:none;border-radius:8px;padding:7px 10px;font-size:12px;cursor:pointer">⭐ طلب تقييم</button>
+      </div>
+    </div>`;
+  });
+
+  if(html) {
+    banner.style.display='block';
+    banner.innerHTML = `<div style="background:#1D9E75;padding:8px 14px;display:flex;align-items:center;gap:6px"><span style="color:white;font-size:13px;font-weight:600">🔔 تذكيرات اليوم</span></div>` + html;
+  } else {
+    banner.style.display='none';
+  }
+}
+
+function sendReminderWA(id, type) {
+  const b = bookings.find(x => x.id==id);
+  if(!b) return;
+  let msg = '';
+  if(type==='checkin') {
+    msg = `🌿 أهلاً وسهلاً ${b.name} 🌿
+يسعدنا تذكيركم بموعد حجزكم في شالية كام دون 🏡
+
+📅 موعد الدخول
+${formatDate(b.checkin)}
+🕔 الساعة ${formatTime(b.checkinTime)}
+
+📍 موقع الشالية
+https://maps.app.goo.gl/jssQ4yr8mZkEhDoC6
+
+📞 للتواصل
+0531082310
+0561069169
+
+نتطلع لاستقبالكم ✨
+Calm Down Chalet 🏡`;
+  } else {
+    const remaining = b.remaining||(b.price-(b.deposit||0));
+    msg = `🌿 ${b.name} العزيز 🌿
+نذكركم بموعد المغادرة من شالية كام دون 🏡
+
+📅 موعد الخروج
+${formatDate(b.checkout)}
+🕚 الساعة ${formatTime(b.checkoutTime)}
+
+${remaining>0?'💰 تذكير: المبلغ المتبقي '+remaining.toLocaleString()+' ريال\n\n':''}شكراً لاختياركم شاليهنا ونتمنى أن إقامتكم كانت ممتعة 🌙
+نسعد بزيارتكم مجدداً 💚
+Calm Down Chalet 🏡`;
+  }
+  window.open('https://wa.me/966'+b.phone.replace(/^0/,'')+'?text='+encodeURIComponent(msg));
+}
+
+
+function renderReminders() {
+  const now = new Date();
+  const todayStr = now.toISOString().split('T')[0];
+
+  const checkinToday = [], checkoutToday = [], checkinTomorrow = [], checkoutTomorrow = [];
+  const tomorrow = new Date(now); tomorrow.setDate(tomorrow.getDate()+1);
+  const tomorrowStr = tomorrow.toISOString().split('T')[0];
+  const in2days = new Date(now); in2days.setDate(in2days.getDate()+2);
+  const in2Str = in2days.toISOString().split('T')[0];
+
+  bookings.forEach(b => {
+    if (b.checkin === todayStr) checkinToday.push(b);
+    else if (b.checkout === todayStr) checkoutToday.push(b);
+    else if (b.checkin === tomorrowStr) checkinTomorrow.push(b);
+    else if (b.checkout === tomorrowStr) checkoutTomorrow.push(b);
+    else if (b.checkin === in2Str) checkinTomorrow.push({...b, _in2:true});
+    else if (b.checkout === in2Str) checkoutTomorrow.push({...b, _in2:true});
+  });
+
+  const todayEl = document.getElementById('reminders-today');
+  const upcomingEl = document.getElementById('reminders-upcoming');
+  const emptyEl = document.getElementById('reminders-empty');
+
+  let todayHTML = '', upcomingHTML = '';
+
+  if (checkinToday.length || checkoutToday.length) {
+    todayHTML += '<div class="divider" style="color:#e53935">🔴 اليوم</div>';
+    checkinToday.forEach(b => { todayHTML += reminderCard(b, 'checkin', 'today'); });
+    checkoutToday.forEach(b => { todayHTML += reminderCard(b, 'checkout', 'today'); });
+  }
+
+  if (checkinTomorrow.length || checkoutTomorrow.length) {
+    upcomingHTML += '<div class="divider" style="color:#E65100">🟡 قريباً</div>';
+    checkinTomorrow.forEach(b => { upcomingHTML += reminderCard(b, 'checkin', b._in2?'in2':'tomorrow'); });
+    checkoutTomorrow.forEach(b => { upcomingHTML += reminderCard(b, 'checkout', b._in2?'in2':'tomorrow'); });
+  }
+
+  todayEl.innerHTML = todayHTML;
+  upcomingEl.innerHTML = upcomingHTML;
+
+  const hasAny = todayHTML || upcomingHTML;
+  emptyEl.style.display = hasAny ? 'none' : 'block';
+}
+
+function reminderCard(b, type, when) {
+  const isCheckin = type === 'checkin';
+  const whenLabel = when==='today'?'اليوم':when==='tomorrow'?'غداً':'بعد غد';
+  const color = when==='today'?'#e53935':when==='tomorrow'?'#E65100':'#1565C0';
+  const borderColor = when==='today'?'#e53935':'#FFA726';
+  const icon = isCheckin ? '🏡 دخول' : '👋 خروج';
+  const time = isCheckin ? b.checkinTime : b.checkoutTime;
+  const date = isCheckin ? b.checkin : b.checkout;
+  const remaining = b.remaining || (b.price - (b.deposit||0));
+
+  const checkinMsg = () => {
+    const payLine = b.payStatus==='paid'?'✅ مدفوع بالكامل':
+      b.payStatus==='deposit'?`💵 المبلغ المتبقي للتسديد عند الدخول: ${remaining.toLocaleString()} ريال`:
+      `⚠️ المبلغ المستحق: ${b.price.toLocaleString()} ريال`;
+    return `🌿 أهلاً ${b.name} 🌿
+نذكّركم بموعد دخولكم لشالية كام دون 🏡
+
+📅 تاريخ الدخول: ${formatDate(b.checkin)}
+🕔 وقت الدخول: ${formatTime(b.checkinTime)}
+
+💰 ${payLine}
+
+📍 موقع الشالية
+https://maps.app.goo.gl/jssQ4yr8mZkEhDoC6
+
+📞 للتواصل: 0531082310
+
+نتطلع لاستقبالكم 🌙✨
+Calm Down Chalet 🏡`;
+  };
+
+  const checkoutMsg = () => {
+    return `🌿 أهلاً ${b.name} 🌿
+نذكّركم بموعد مغادرتكم من شالية كام دون 🏡
+
+📅 تاريخ الخروج: ${formatDate(b.checkout)}
+🕚 وقت الخروج: ${formatTime(b.checkoutTime)}
+
+نأمل أن إقامتكم كانت ممتعة 😊
+يسعدنا خدمتكم مجدداً في أي وقت 🌟
+
+📞 للتواصل: 0531082310
+Calm Down Chalet 🏡`;
+  };
+
+  return `<div class="res-card" style="border-right:4px solid ${borderColor}">
+    <div class="card-top">
+      <div>
+        <div style="font-size:11px;font-weight:600;color:${color};margin-bottom:3px">${icon} — ${whenLabel}</div>
+        <div class="card-name">${b.name}</div>
+      </div>
+      <div style="text-align:left;font-size:12px;color:var(--text2)">${date}<br>${time||''}</div>
+    </div>
+    <div class="card-row">📱 ${b.phone}</div>
+    ${remaining>0&&isCheckin?`<div class="card-row" style="color:#e53935;font-weight:500">💰 متبقي: ${remaining.toLocaleString()} ريال</div>`:''}
+    <button class="btn-main" style="margin-top:10px;font-size:13px;padding:10px;background:#25D366"
+      onclick="sendReminderWA(${b.id}, '${type}')">
+      📲 إرسال تذكير واتساب
+    </button>
+    ${!isCheckin ? `<button class="btn-main" style="margin-top:6px;font-size:13px;padding:10px;background:#FBBC04;color:#333;border:none"
+      onclick="sendReviewRequest('${b.phone}','${b.name}')">
+      ⭐ إرسال طلب تقييم
+    </button>` : ''}
+  </div>`;
+}
+
+
+
+function sendReviewRequest(phone, name) {
+  const msg = `🌿 ${name} العزيز 🌿
+
+نأمل أن إقامتكم في شالية كام دون كانت ممتعة ومريحة 🏡✨
+
+تقييمكم وملاحظاتكم تهمنا كثيرًا وتساعدنا نطور تجربتكم للأفضل 🌟
+ولا تنسوا مشاركة أجمل لحظاتكم معنا 📸
+
+📍 لزيارة الموقع وترك تقييمكم:
+https://maps.app.goo.gl/ejmNHhZ1eca6gZYZA?g_st=ic
+
+شكراً جزيلاً لاختياركم شاليهنا 💚
+Calm Down Chalet 🏡`;
+  window.open('https://wa.me/966' + phone.replace(/^0/,'') + '?text=' + encodeURIComponent(msg));
+}
+
+function checkRemindersOnLoad() {
+  const now = new Date();
+  const todayStr = now.toISOString().split('T')[0];
+  const tomorrow = new Date(now); tomorrow.setDate(tomorrow.getDate()+1);
+  const tomorrowStr = tomorrow.toISOString().split('T')[0];
+  const urgent = bookings.filter(b => b.checkin===todayStr || b.checkout===todayStr || b.checkin===tomorrowStr || b.checkout===tomorrowStr);
+  if (urgent.length > 0) {
+    setTimeout(() => showToast('🔔 لديك ' + urgent.length + ' تذكير اليوم!'), 1500);
+  }
+}
+
+
+const APP_PIN = '2248';
+
+function checkPin() {
+  const input = document.getElementById('pin-input').value;
+  if (input === APP_PIN) {
+    document.getElementById('login-screen').style.display = 'none';
+    localStorage.setItem('chalet_auth', btoa(APP_PIN + Date.now()));
+    showToast('✅ مرحباً بك!');
+  } else {
+    document.getElementById('pin-error').style.display = 'block';
+    document.getElementById('pin-input').value = '';
+    document.getElementById('pin-input').focus();
+    setTimeout(()=>document.getElementById('pin-error').style.display='none', 2000);
+  }
+}
+
+function checkAuth() {
+  const auth = localStorage.getItem('chalet_auth');
+  if (auth) {
+    try {
+      const decoded = atob(auth);
+      if (decoded.startsWith(APP_PIN)) {
+        document.getElementById('login-screen').style.display = 'none';
+        return;
+      }
+    } catch(e) {}
+  }
+  document.getElementById('login-screen').style.display = 'flex';
+  setTimeout(()=>document.getElementById('pin-input').focus(), 300);
+}
+
+function updateStats() {
+  document.getElementById('s-total').textContent = bookings.length;
+  document.getElementById('s-confirmed').textContent = bookings.filter(b=>b.status==='confirmed').length;
+  document.getElementById('s-debt').textContent = bookings.filter(b=>b.payStatus==='debt'||b.remaining>0).length;
+}
+
+function updateBackupStats() {
+  updateExpenseSummary();
+  const totalRev = bookings.reduce((s,b)=>s+b.price,0);
+  const totalCollected = bookings.reduce((s,b)=>s+(b.deposit||0),0);
+  document.getElementById('b-total').textContent = bookings.length;
+  document.getElementById('b-revenue').textContent = totalRev.toLocaleString()+' ريال';
+  document.getElementById('b-collected').textContent = totalCollected.toLocaleString()+' ريال';
+  document.getElementById('b-remaining').textContent = (totalRev-totalCollected).toLocaleString()+' ريال';
+}
+
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyFRDgZUI5k3tr9VvDc_KAwv2O-qchqKAnNbO8gCUfLKeCX5CLgBavxxUdbu7pT7bH_FA/exec';
+
+function syncToSheets() {
+  if(!bookings.length){showToast('⚠️ لا توجد حجوزات');return;}
+  const totalRevenue = bookings.reduce((s,b)=>s+b.price,0);
+  const totalCollected = bookings.reduce((s,b)=>s+(b.deposit||0),0);
+  const totalRemaining = bookings.reduce((s,b)=>s+(b.remaining||0),0);
+  const totalExpenses = expenses.reduce((s,e)=>s+e.amount,0);
+  const netProfit = totalCollected - totalExpenses;
+  const payload = {
+    action:'sync',
+    bookings,
+    expenses,
+    summary: {
+      totalBookings: bookings.length,
+      confirmed: bookings.filter(b=>b.status==='confirmed').length,
+      pending: bookings.filter(b=>b.status==='pending').length,
+      totalRevenue,
+      totalCollected,
+      totalRemaining,
+      totalExpenses,
+      netProfit
+    }
+  };
+  const data = encodeURIComponent(JSON.stringify(payload));
+  const url = SCRIPT_URL + '?data=' + data;
+  window.open(url, '_blank');
+  const now = new Date().toLocaleTimeString('ar-SA');
+  setTimeout(()=>{
+    document.getElementById('last-sync').textContent = now;
+    document.getElementById('sync-dot').style.background='var(--green)';
+    showToast('✅ تمت المزامنة! ' + bookings.length + ' حجز');
+  }, 3000);
+}
+
+function exportCSV() {
+  if(!bookings.length){showToast('⚠️ لا توجد بيانات');return;}
+  try {
+    const rows=[['الرقم','الاسم','الجوال','رقم الهوية','تاريخ الوصول','وقت الوصول','تاريخ المغادرة','وقت المغادرة','السعر','المدفوع','المتبقي','حالة الدفع','نوع الحجز','الحالة','الملاحظات']];
+    bookings.forEach((b,i)=>rows.push([i+1,b.name,b.phone,b.idNum||'',b.checkin,b.checkinTime||'',b.checkout,b.checkoutTime||'',b.price,b.deposit||0,b.remaining||0,b.payStatus==='paid'?'مدفوع كامل':b.payStatus==='deposit'?'عربون':'دين',b.type==='daily'?'يومي':'نهاية أسبوع',b.status==='confirmed'?'مؤكد':'معلق',b.notes||'']));
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols'] = [{wch:8},{wch:20},{wch:15},{wch:15},{wch:14},{wch:12},{wch:14},{wch:12},{wch:10},{wch:10},{wch:10},{wch:14},{wch:14},{wch:10},{wch:20}];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'حجوزات الشالية');
+    const expSheet = XLSX.utils.aoa_to_sheet([['الفئة','الوصف','المبلغ','التاريخ'],...expenses.map(e=>[e.cat,e.desc||'',e.amount,e.date])]);
+    XLSX.utils.book_append_sheet(wb, expSheet, 'المصروفات');
+    const today = new Date().toLocaleDateString('ar-SA').replace(/\//g,'-');
+    XLSX.writeFile(wb, 'حجوزات_الشالية_' + today + '.xlsx');
+    showToast('📥 تم تحميل ملف Excel!');
+  } catch(e) {
+    showToast('❌ خطأ في التحميل');
+  }
+}
+
+function clearAll() { if(!confirm('مسح جميع البيانات؟'))return; bookings=[];save();renderList();showToast('🗑️ تم المسح'); }
+function showToast(msg) { const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000); }
+
+setPayStatus('deposit');
+checkReminders();
+document.getElementById('e-date').value = today;
+document.getElementById('o-title').addEventListener('input', updateOfferPreview);
+document.getElementById('o-body').addEventListener('input', updateOfferPreview);
+checkAuth();
+updateStats();
+checkRemindersOnLoad();
+if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+</script>
+</body>
+</html>
