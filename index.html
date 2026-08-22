@@ -558,7 +558,12 @@ function formatTime(t) {
 
 function sendWhatsApp() {
   if (!lastBooking) return;
-  window.open('https://wa.me/966' + lastBooking.phone.replace(/^0/,'') + '?text=' + encodeURIComponent(buildMsg(lastBooking)));
+  const phone = '966' + lastBooking.phone.replace(/^0/,'').replace(/\D/g,'');
+  const text = encodeURIComponent(buildMsg(lastBooking));
+  const url = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+    ? 'whatsapp://send?phone=' + phone + '&text=' + text
+    : 'https://wa.me/' + phone + '?text=' + text;
+  window.open(url, '_blank');
   closeModal();
 }
 
@@ -615,7 +620,12 @@ function delete_b(id) { if(!confirm('هل تريد حذف هذا الحجز؟'))
 
 function wa_b(id) {
   const b=bookings.find(x=>x.id===id); if(!b)return;
-  window.open('https://wa.me/966'+b.phone.replace(/^0/,'')+'?text='+encodeURIComponent(buildMsg(b)));
+  const phone = '966' + b.phone.replace(/^0/,'').replace(/\D/g,'');
+  const text = encodeURIComponent(buildMsg(b));
+  const url = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+    ? 'whatsapp://send?phone=' + phone + '&text=' + text
+    : 'https://wa.me/' + phone + '?text=' + text;
+  window.open(url, '_blank');
 }
 
 
@@ -696,7 +706,11 @@ function updateOfferPreview() {
 function sendOfferWA() {
   const msg = buildOfferMsg();
   if (!msg) { showToast('⚠️ اكتب نص العرض أولاً'); return; }
-  window.open('https://wa.me/?text=' + encodeURIComponent(msg));
+  const text = encodeURIComponent(msg);
+  const url = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+    ? 'whatsapp://send?text=' + text
+    : 'https://wa.me/?text=' + text;
+  window.open(url, '_blank');
 }
 
 function copyOffer() {
@@ -747,7 +761,11 @@ function sendSavedOffer(id) {
   const o = savedOffers.find(x => x.id===id);
   if (!o) return;
   const msg = (o.title ? o.title + '\n' + '─'.repeat(20) + '\n' : '') + (o.body||'');
-  window.open('https://wa.me/?text=' + encodeURIComponent(msg));
+  const text = encodeURIComponent(msg);
+  const url = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+    ? 'whatsapp://send?text=' + text
+    : 'https://wa.me/?text=' + text;
+  window.open(url, '_blank');
 }
 
 function deleteSavedOffer(id) {
@@ -869,7 +887,12 @@ ${remaining>0?'💰 تذكير: المبلغ المتبقي '+remaining.toLocale
 نسعد بزيارتكم مجدداً 💚
 Calm Down Chalet 🏡`;
   }
-  window.open('https://wa.me/966'+b.phone.replace(/^0/,'')+'?text='+encodeURIComponent(msg));
+  const phone = '966' + b.phone.replace(/^0/,'').replace(/\D/g,'');
+  const text = encodeURIComponent(msg);
+  const url = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+    ? 'whatsapp://send?phone=' + phone + '&text=' + text
+    : 'https://wa.me/' + phone + '?text=' + text;
+  window.open(url, '_blank');
 }
 
 
@@ -998,7 +1021,12 @@ https://maps.app.goo.gl/ejmNHhZ1eca6gZYZA?g_st=ic
 
 شكراً جزيلاً لاختياركم شاليهنا 💚
 Calm Down Chalet 🏡`;
-  window.open('https://wa.me/966' + phone.replace(/^0/,'') + '?text=' + encodeURIComponent(msg));
+  const cleanPhone = '966' + phone.replace(/^0/,'').replace(/\D/g,'');
+  const text = encodeURIComponent(msg);
+  const url = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+    ? 'whatsapp://send?phone=' + cleanPhone + '&text=' + text
+    : 'https://wa.me/' + cleanPhone + '?text=' + text;
+  window.open(url, '_blank');
 }
 
 function checkRemindersOnLoad() {
@@ -1063,6 +1091,9 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyFRDgZUI5k3tr9VvDc_
 
 function syncToSheets() {
   if(!bookings.length){showToast('⚠️ لا توجد حجوزات');return;}
+  showToast('⏳ جاري الإرسال...');
+  document.getElementById('sync-dot').style.background='#FFA726';
+
   const totalRevenue = bookings.reduce((s,b)=>s+b.price,0);
   const totalCollected = bookings.reduce((s,b)=>s+(b.deposit||0),0);
   const totalRemaining = bookings.reduce((s,b)=>s+(b.remaining||0),0);
@@ -1083,15 +1114,24 @@ function syncToSheets() {
       netProfit
     }
   };
-  const data = encodeURIComponent(JSON.stringify(payload));
-  const url = SCRIPT_URL + '?data=' + data;
-  window.open(url, '_blank');
-  const now = new Date().toLocaleTimeString('ar-SA');
-  setTimeout(()=>{
+
+  fetch(SCRIPT_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  })
+  .then(() => {
+    const now = new Date().toLocaleTimeString('ar-SA');
     document.getElementById('last-sync').textContent = now;
     document.getElementById('sync-dot').style.background='var(--green)';
     showToast('✅ تمت المزامنة! ' + bookings.length + ' حجز');
-  }, 3000);
+  })
+  .catch(err => {
+    console.error('Sync error:', err);
+    document.getElementById('sync-dot').style.background='#e53935';
+    showToast('❌ فشل الإرسال، تحقق من الاتصال');
+  });
 }
 
 function exportCSV() {
